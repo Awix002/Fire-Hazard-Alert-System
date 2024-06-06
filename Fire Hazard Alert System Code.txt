@@ -1,0 +1,78 @@
+#include <DHT.h>  // include the DHT library
+#include <Servo.h>  // include the Servo library
+#include <MQ2.h>  // include the MQ2 library
+
+#define DHTTYPE DHT11  // specify the type of DHT sensor
+#define DHT_PIN A0  // analogue pin DHT11 sensor is connected to
+#define MQ2_PIN A1  // analogue pin MQ2 sensor is connected to
+#define BUZZER_PIN 9  // digital pin buzzer is connected to
+
+bool isOpen = false;  // boolean variable to track status of door
+
+DHT dht(DHT_PIN, DHTTYPE);  // create a DHT object
+Servo servo1;  // create a Servo object
+Servo servo2;  // create another servo object
+
+void setup()
+{
+  Serial.begin(9600); // start serial communication
+  dht.begin(); // start the DHT sensor
+  servo1.attach(6); // attach the servo1 to  digital pin 6
+  servo2.attach(5); // attach the servo2 to digital pin 5
+
+  pinMode(BUZZER_PIN, OUTPUT);
+
+}
+
+void readMQ2()
+{
+  // Read the data from the MQ2 sensor and print it to the serial monitor
+  int sensorValue = analogRead(MQ2_PIN);
+  Serial.print("Gas Concentration: ");
+  Serial.println(sensorValue);
+
+  // Update the buzzer based on the MQ2 sensor reading
+  if (sensorValue > 300)
+  {
+    digitalWrite(BUZZER_PIN, HIGH);
+  }
+
+  else
+  {
+    digitalWrite(BUZZER_PIN, LOW);
+  }
+}
+
+void readTemperature()
+{
+  // Read the temperature from the DHT sensor and print it to the serial monitor
+  float temp = dht.readTemperature();
+  Serial.print("Temperature (C): ");
+  Serial.println(temp);
+
+  // Rotate the servo motor based on the temperature to simulate door opening and closing mechanism
+  if (temp > 20 && isOpen)
+  { 
+    // if the temperature is greater than 14 degrees Celsius and the door is not open
+    servo1.write(180);  //rotate the servo to 180 degrees
+    servo2.write(0);
+    isOpen = true;  //update the door status to open
+  }
+
+  else if (temp <= 20 && !isOpen)
+  { 
+    // if the temperature is less than or equal to 14 degrees Celsius and the door is open
+    servo1.write(180);  //rotate the servo back to 0 degrees
+    servo2.write(0);
+    isOpen = false;  // door remains status to close
+  }
+}
+
+void loop()
+{
+  readMQ2();
+  delay(1000); // wait for 1 second before reading the MQ2 sensor again
+
+  readTemperature();
+  delay(2000); // wait for 2 seconds before reading the temperature again
+}
